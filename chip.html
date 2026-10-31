@@ -1,0 +1,26 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Perfil de mascota · PawPass</title><link rel="stylesheet" href="base.css">
+<style>#hero{border-radius:24px;min-height:300px;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;background:#CFE4F5}#hero img{max-width:100%;max-height:340px;display:block}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:18px;margin-top:-28px;position:relative}
+.tag{display:inline-block;border:1px solid var(--border);border-radius:99px;padding:2px 12px;font-size:14px;margin:0 6px 6px 0}.btn{display:block;text-align:center;font-weight:600;border-radius:14px;padding:13px;margin-top:10px;background:var(--ink);color:var(--bg);text-decoration:none;word-break:break-word}
+button.link{background:none;border:0;color:var(--muted);font:inherit;font-size:14px;text-decoration:underline;padding:12px 0;cursor:pointer}[hidden]{display:none!important}</style></head>
+<body><main><div id="profile" hidden><div id="hero"></div><div class="card"><h1 id="name"></h1><p id="message"></p><div id="tags"></div><p class="muted" id="chip"></p><div id="contact"></div></div>
+<button class="link" id="report"></button><p class="muted" id="reported" hidden></p></div>
+<div id="empty" hidden><h1 id="emptyT"></h1><p id="emptyB"></p></div><p class="muted" id="foot"></p></main>
+<script>
+const URLB="https://gzbibxxzbnldgjfjhbco.supabase.co",KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd6YmlieHh6Ym5sZGdqZmpoYmNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1ODMzODYsImV4cCI6MjA5MDE1OTM4Nn0.ZjXnWDZy2kz44dITvMeWGlDjyb_GUbQ_nEoCXpvThyI";
+const es=(navigator.language||"es").toLowerCase().startsWith("es");
+const T=es?{hello:n=>`¡Hola! Soy ${n}`,chip:"Microchip ISO",call:"Llamar a mi familia",mail:"Escribir a mi familia",report:"Reportar este perfil",ask:"¿Por qué lo reportas?",done:"Gracias. Lo vamos a revisar.",dog:"Perro",cat:"Gato",female:"Hembra",male:"Macho",emptyT:"No hay perfil publicado para este chip",emptyB:"Si encontraste a esta mascota, llévala con un veterinario o refugio para leer su microchip.",err:"No pudimos cargar el perfil. Revisa tu conexión.",foot:"Perfil publicado por su familia en PawPass."}
+:{hello:n=>`Hi! I'm ${n}`,chip:"ISO microchip",call:"Call my family",mail:"Email my family",report:"Report this profile",ask:"Why are you reporting it?",done:"Thanks. We'll review it.",dog:"Dog",cat:"Cat",female:"Female",male:"Male",emptyT:"No profile published for this chip",emptyB:"If you found this pet, a vet or shelter can read its microchip.",err:"We couldn't load the profile. Check your connection.",foot:"Profile published by the pet's family on PawPass."};
+const $=i=>document.getElementById(i),chip=new URLSearchParams(location.search).get("n")||"";
+const rpc=(f,b)=>fetch(`${URLB}/rest/v1/rpc/${f}`,{method:"POST",headers:{apikey:KEY,Authorization:`Bearer ${KEY}`,"Content-Type":"application/json","Content-Profile":"pawpass"},body:JSON.stringify(b)});
+function empty(t,b){$("emptyT").textContent=t;$("emptyB").textContent=b;$("empty").hidden=false}
+function action(href,label){const a=document.createElement("a");a.className="btn";a.href=href;a.textContent=label;$("contact").append(a)}
+(async()=>{$("foot").textContent=T.foot;if(!/^[0-9]{15}$/.test(chip))return empty(T.emptyT,T.emptyB);
+try{const r=await rpc("get_public_profile",{p_chip:chip});if(!r.ok)throw 0;const p=await r.json();if(!p)return empty(T.emptyT,T.emptyB);
+$("hero").style.background=p.bg_color;if(p.photo_path){const i=new Image();i.alt=p.name;i.src=`${URLB}/storage/v1/object/public/pawpass-photos/${encodeURI(p.photo_path)}`;$("hero").append(i)}
+$("name").textContent=T.hello(p.name);$("message").textContent=p.message;document.title=`${p.name} · PawPass`;
+for(const t of[p.breed||T[p.species],T[p.sex]]){const s=document.createElement("span");s.className="tag";s.textContent=t;$("tags").append(s)}
+$("chip").textContent=`${T.chip}: ${p.chip_number}`;if(p.contact_phone)action(`tel:${p.contact_phone.replace(/[^+0-9]/g,"")}`,T.call);if(p.contact_email)action(`mailto:${encodeURIComponent(p.contact_email)}`,T.mail);
+$("report").textContent=T.report;$("report").onclick=async()=>{const why=prompt(T.ask);if(why===null)return;await rpc("report_profile",{p_chip:chip,p_reason:why});$("report").hidden=true;$("reported").textContent=T.done;$("reported").hidden=false};
+$("profile").hidden=false}catch{empty(T.err,"")}})();
+</script></body></html>
